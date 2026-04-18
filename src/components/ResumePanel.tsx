@@ -1,5 +1,4 @@
 // 简历分析面板
-import React from 'react';
 import useResumeAnalysis from '../hooks/useResumeAnalysis';
 import { FileText, Loader2, Send, Upload } from 'lucide-react';
 
