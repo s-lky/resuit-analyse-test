@@ -1,0 +1,6 @@
+{
+    "name": "DeepSeek-智能面试与简历分析平台",
+    "description":"基于qwen和deepseek的智能面试分析与简历优化平台",
+    "requesetFramePermissions":[],
+    "majorCapabilities":[]
+}
