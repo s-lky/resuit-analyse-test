@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { BarChart3 } from 'lucide-react';
 import Sidebar from './components/Sidebar';
-import InterviewPanel from './components/\';
+import InterviewPanel from './components/InterviewPanel';
 import ResumePanel from './components/ResumePanel';
 
 //主程序，导出app
