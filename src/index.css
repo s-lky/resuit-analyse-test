@@ -1,63 +1,82 @@
 @import "tailwindcss";
 
-@theme{
-    --color-bg: #f1f5f9;
-    --color-sidebar-bg: #1e293b;
-    --color-card-bg: #ffffff;
-    --color-text-primary: #0f172a;
-    --color-text-secondary: #64748b;
-    --color-accent: #2563eb;
-    --color-accent-light: #dbeafe;
-    --color-border: #e2e8f0;
-    --color-success: #10b981;
-    --color-warning: #f59e0b;
-    --color-danger: #ef4444;
+@theme {
+  /* 页面背景 */
+  --color-bg: #f1f5f9;
+  /* 侧边栏背景 */
+  --color-sidebar-bg: #1e293b;
+  /* 卡片背景 */
+  --color-card-bg: #ffffff;
+  /* 正文主要文字 */
+  --color-text-primary: #0f172a;
+  /* 次要文字、说明文字 */
+  --color-text-secondary: #64748b;
+  /* 主色调（按钮、选中、高亮） */
+  --color-accent: #2563eb;
+  /* 消息气泡背景 */
+  --color-accent-light: #dbeafe;
+  /* 所有卡片、分割线 */
+  --color-border: #e2e8f0;
+  /* 成功、完成状态 */
+  --color-success: #10b981;
+  /* 警告、提醒 */
+  --color-warning: #f59e0b;
+  /* 错误、删除、危险操作 */
+  --color-danger: #ef4444;
 }
 
-@layer base{
-    body{
-        @apply bg-bg text-text-primary font-sans;
-    }
+/* 原生 HTML 标签设置默认样式 */
+@layer base {
+  body {
+    @apply bg-bg text-text-primary font-sans;
+  }
 }
 
-@layer components{
-    .card{
-        @apply bg-card-bg rounded-xl border border-border shadow-sm overflow-hidden flex flex-col;
-    }
+/* 定义可复用组件类 */
+@layer components {
+  /* 卡片组件：白色背景 大圆角 浅灰边框 轻微阴影 内部垂直布局 溢出隐藏 */
+  .card {
+    @apply bg-card-bg rounded-xl border border-border shadow-sm overflow-hidden flex flex-col;
+  }
+  /* 卡片头部：内边距 底部边框 文字半粗体、小字号 左右布局 */
+  .card-header {
+    @apply p-4 border-b border-border font-semibold text-sm flex justify-between items-center;
+  }
 
-    .card-header{
-        @apply p-4 border-b border-border font-semibold text-sm flex justify-between items-center;
-    }
+  /* 侧边栏导航栏：导航按钮样式 选中时：蓝色背景、白色文字 未选中 hover：半透明白色背景 */
+  .nav-item {
+    @apply p-3 px-4 rounded-lg mb-2 cursor-pointer text-sm transition-colors flex items-center gap-3;
+  }
 
-    .nav-item{
-        @apply p-3 px-4 rounded-lg mb-2 cursor-pointer text-sm transition-colors flex items-center gap-3;
-    }
+  .nav-item.active {
+    @apply bg-accent text-white;
+  }
 
-    .nav-item.active{
-        @apply bg-accent text-white;
-    }
+  .nav-item:hover:not(.active) {
+    @apply bg-white/10;
+  }
 
-    .nav-item:hover:not(.active){
-        @apply bg-white/10;
-    }
+  /* 对话界面：聊天消息气泡 bubble-a：对方消息（浅蓝、左下角无圆角）bubble-b：自己消息（白色带边框、右下角无圆角） */
+  .bubble {
+    @apply mb-4 p-3 rounded-lg max-w-[90%] text-sm leading-relaxed;
+  }
 
-    .bubble{
-        @apply mb-4 p-3 rounded-lg max-w-[90%] text-sm leading-relaxed;
-    }
+  .bubble-a {
+    @apply bg-accent-light self-start rounded-bl-none;
+  }
 
-    .bubble-a{
-        @apply bg-accent-light self-start rounded-bl-none;
-    }
+  .bubble-b {
+    @apply bg-slate-50 border border-border self-end rounded-br-none;
+  }
 
-    .bubble-b{
-        @apply bg-slate-50 border border-border self-end rounded-br-none;
-    }
+  /* 发言者名称：小号大写文字 加粗 用于显示 “用户 / 机器人” 标签 */
+  .speaker {
+    @apply font-bold text-[10px] uppercase mb-1 block;
+  }
 
-    .speaker{
-        @apply font-bold text-[10px] uppercase mb-1 block;
-    }
-
-    .streaming-output{
-        @apply font-mono text-sm bg-slate-900 text-success p-4 rounded-lg leading-relaxed flex-1 mt-3 overflow-auto;
-    }
+  /* 流式输出框:黑色背景 绿色文字 等宽字体（代码样式）用于 AI 流式输出、终端输出、代码展示 */
+  .streaming-output {
+    @apply font-mono text-sm bg-slate-900 text-success p-4 rounded-lg leading-relaxed flex-1 mt-3 overflow-auto;
+  }
 }
+
