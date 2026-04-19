@@ -39,7 +39,7 @@ export default function CoachingCard({ data }: Props){
                             </div>
 
                             <ul className="space-y-2">
-                                {data.opportunites.map((o, i) =>(
+                                {data.opportunities.map((o, i) =>(
                                     <li key={i} className="text-xs flex gap-2">
                                         <div className="w-1.5 h-1.5 rounded-full bg-danger mt-1 shrink-0" />
                                         {o}

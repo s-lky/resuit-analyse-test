@@ -23,9 +23,9 @@ export default function TranscriptBox({ transcript }: Props){
             {transcript.map((item, i) => (
                 //变位置
                 <div key={i} className={`flex flex-col ${item.speaker === 'A' ? 'items-start' : 'items-end'}`}>
-                    //变换不同人字体
+                    {/* //变换不同人字体 */}
                     <div className={`bubble ${item.speaker === 'A' ? 'bubble-a' : 'bubble-b'}`}>
-                        //变名字
+                        {/* //变名字 */}
                         <span className="speaker">{item.speaker === 'A' ? '面试官(A)' : '候选人(B)'}</span>
                         {item.text}
                     </div>
