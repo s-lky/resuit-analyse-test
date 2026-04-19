@@ -1,6 +1,5 @@
 // 主文件
-import React, { useState } from "react";
-import { BarChart3 } from 'lucide-react';
+import { useState } from "react";
 import Sidebar from './components/Sidebar';
 import InterviewPanel from './components/InterviewPanel';
 import ResumePanel from './components/ResumePanel';

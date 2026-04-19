@@ -1,6 +1,5 @@
 // 侧边栏组件-菜单按钮，切换不同业务
 import { BarChart3, Settings, Mic, FileText } from "lucide-react"; //图标库
-import React from "react";
 
 //接收App的安排
 interface SidebarProps{

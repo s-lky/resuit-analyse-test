@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme{
+    --color-bg: #f1f5f9;
+    --color-sidebar-bg: #1e293b;
+    --color-card-bg: #ffffff;
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #64748b;
+    --color-accent: #2563eb;
+    --color-accent-light: #dbeafe;
+    --color-border: #e2e8f0;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+}
+
+@layer base{
+    body{
+        @apply bg-bg text-text-primary font-sans;
+    }
+}
+
+@layer components{
+    .card{
+        @apply bg-card-bg rounded-xl border border-border shadow-sm overflow-hidden flex flex-col;
+    }
+
+    .card-header{
+        @apply p-4 border-b border-border font-semibold text-sm flex justify-between items-center;
+    }
+
+    .nav-item{
+        @apply p-3 px-4 rounded-lg mb-2 cursor-pointer text-sm transition-colors flex items-center gap-3;
+    }
+
+    .nav-item.active{
+        @apply bg-accent text-white;
+    }
+
+    .nav-item:hover:not(.active){
+        @apply bg-white/10;
+    }
+
+    .bubble{
+        @apply mb-4 p-3 rounded-lg max-w-[90%] text-sm leading-relaxed;
+    }
+
+    .bubble-a{
+        @apply bg-accent-light self-start rounded-bl-none;
+    }
+
+    .bubble-b{
+        @apply bg-slate-50 border border-border self-end rounded-br-none;
+    }
+
+    .speaker{
+        @apply font-bold text-[10px] uppercase mb-1 block;
+    }
+
+    .streaming-output{
+        @apply font-mono text-sm bg-slate-900 text-success p-4 rounded-lg leading-relaxed flex-1 mt-3 overflow-auto;
+    }
+}

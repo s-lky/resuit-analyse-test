@@ -1,5 +1,4 @@
 // 面试音频分析面板
-import React from 'react';
 import useInterviewAnalysis from '../hooks/useInterviewAnalysis';
 import TranscriptBox from './interview/TranscriptBox'; //记录音频里的话
 import EngagementChart from './interview/EngagementChart'; //负责画图
