@@ -48,45 +48,59 @@ export default function useResumeAnalysis(){
                 body: JSON.stringify({ text: resumeText }),
             });
 
+            if(!response.ok){
+                throw new Error(`请求失败: ${response.status}`);
+            }
+
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
 
             if(reader){
-                let shouldStop = false;
-                while(!shouldStop){
+                let isDone = false;
+                while(!isDone){
                     const { done, value } = await reader.read();
                     if(done) break;
 
+                    // 解码并添加到缓冲区
                     buffer += decoder.decode(value, { stream: true });
                     
-                    // 处理完整的行
+                    // 按行分割处理
                     const lines = buffer.split('\n');
+                    // 保留最后一个不完整的行
                     buffer = lines.pop() || '';
 
                     for(const line of lines){
                         if(line.startsWith('data: ')){
                             const data = line.slice(6).trim();
+                            
                             if(data === '[DONE]'){
-                                shouldStop = true;
+                                isDone = true;
                                 break;
                             }
+                            
                             if(data){
                                 try{
                                     const parsed = JSON.parse(data);
                                     if(parsed.content){
                                         setResumeAnalysis(prev => prev + parsed.content);
+                                    }else if(parsed.error){
+                                        console.error('分析错误:', parsed.error);
+                                        setResumeAnalysis('分析失败：' + parsed.error);
+                                        isDone = true;
+                                        break;
                                     }
                                 }catch(e){
-                                    console.warn('JSON parse error:', e, 'data:', data);
+                                    console.warn('JSON 解析错误:', e);
                                 }
                             }
                         }
                     }
                 }
             }
-        }catch(error){
-            console.error('Streaming Error:',error);
+        }catch(error: any){
+            console.error('Streaming Error:', error);
+            setResumeAnalysis('请求失败，请稍后重试');
         }finally{
             setIsStreaming(false);
         }

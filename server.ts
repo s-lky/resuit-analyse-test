@@ -166,28 +166,36 @@ app.post('/api/analyze-resume', async(req,res) =>{
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // 禁用代理缓冲
 
     try{
+        console.log('开始简历分析，使用流式输出');
+        
         const stream = await deepseek.chat.completions.create({
             model: 'deepseek-chat',
             messages:[
-                { role: 'system', content:'你是一个专业的简历优化专家。请分析以下简历内容，并给出具体的优化建议。请使用流式输出。' },
+                { role: 'system', content:'你是一个专业的简历优化专家。请分析以下简历内容，并给出具体的优化建议。' },
                 { role: 'user', content:text }
             ],
-            stream:true, // 开启流式输出
+            stream: true, // 开启流式输出
         });
+        
         // 逐段读取流，实时发给前端
         for await(const chunk of stream){
             const content = chunk.choices[0]?.delta?.content || '';
             if(content){
-                res.write(`data:${JSON.stringify({ content })}\n\n`);
+                // SSE 格式：data: {json}\n\n
+                res.write(`data: ${JSON.stringify({ content })}\n\n`);
             }
         }
-        res.write('data: [DONE]\n\n');// 结束
+        
+        // 发送结束标记
+        res.write('data: [DONE]\n\n');
         res.end();
-    }catch(error){
+    }catch(error: any){
         console.error('DeepSeek Error:', error);
-        res.write(`dataL${JSON.stringify({ error: 'Analysis failed' })}\n\n`);
+        // 错误时也要用 SSE 格式发送
+        res.write(`data: ${JSON.stringify({ error: error.message || 'Analysis failed' })}\n\n`);
         res.end();
     }
 });
