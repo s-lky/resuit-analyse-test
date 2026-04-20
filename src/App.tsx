@@ -3,11 +3,14 @@ import { useState } from "react";
 import Sidebar from './components/Sidebar';
 import InterviewPanel from './components/InterviewPanel';
 import ResumePanel from './components/ResumePanel';
+import { useToast } from "./hooks/useToast";
+import ToastContainer from "./components/Toast/ToastContainer";
 
 //主程序，导出app
 export default function App(){
   //给页面按个开关，activeTab是当前频道，setActiveTab是换台，interview是默认频道，<'interview' | 'resume'>是只能在这两个之间切换
   const [activeTab, setActiveTab] = useState<'interview' | 'resume'>('interview');
+  const { toasts, removeToast } = useToast();
 
   //以下是网页上真正能看到的东西
   return(
@@ -33,6 +36,8 @@ export default function App(){
         {/* 中间的频道播放器如果 频道是 'interview'，屏幕上就放映 InterviewPanel，否则就是ResumePanel */}
         {activeTab === 'interview' ? <InterviewPanel /> : <ResumePanel/>}
       </main>
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 }

@@ -4,15 +4,24 @@ import TranscriptBox from './interview/TranscriptBox'; //记录音频里的话
 import EngagementChart from './interview/EngagementChart'; //负责画图
 import CoachingCard from './interview/CoachingCard'; //给建议
 import { Loader2, Upload} from 'lucide-react';
+import { useToast } from '../hooks/useToast';
 
 export default function InterviewPanel(){
+    const { success, error, info } = useToast();
+
     const{
         isAnalyzing,  //是否正在思考
         transcript,  //面试音频文字记录
         engagementData, //用户表现的数据图表材料
         coaching, //面试建议
         handleAudioUpload, 
-    } = useInterviewAnalysis();
+    } = useInterviewAnalysis({
+        onToast: (message, type) => {
+            if(type === 'success') success(message);
+            else if(type === 'error') error(message);
+            else info(message);
+        }
+    });
 
     return(
         // 屏幕三等分，文字记录占两份，图表和建议占一份

@@ -11,8 +11,12 @@ export interface CoachingData{
     opportunities: string[];
 }
 
+interface UseInterviewAnalysisOptions{
+    onToast ?: (message: string, type: 'success' | 'error' | 'info') => void;
+}
+
 //四大记忆区
-export default function useInterviewAnalysis(){
+export default function useInterviewAnalysis(option?: UseInterviewAnalysisOptions){
     //默认没在分析
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     //默认空白的记录数组
@@ -45,6 +49,8 @@ export default function useInterviewAnalysis(){
             reader.onload = async () => {
                 const base64 = (reader.result as string).split(',')[1];
 
+                option?.onToast?.('上传成功，开始分析','info');
+
                 //把代码扔给第一个AI模型transcribeAudio
                 const res = await transcribeAudio(base64, file.type);
                 setTranscript(res);
@@ -62,10 +68,12 @@ export default function useInterviewAnalysis(){
                 });
                 const coachingData = await coachingRes.json();
                 setCoaching(coachingData);
+
+                option?.onToast?.('分析完成','success');
             };
         }catch(error){
             console.error(error);
-            alert('分析失败，请检查控制台网络请求');
+            option?.onToast?.('分析失败，请检查控制台网络请求','error');
         }finally{
             setIsAnalyzing(false);
         }
