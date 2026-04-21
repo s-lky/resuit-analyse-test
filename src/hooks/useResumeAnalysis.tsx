@@ -1,11 +1,13 @@
 import * as pdfjsLib from 'pdfjs-dist'
 import { useState } from 'react';
+import { useToast } from './useToast';
 //引入pdfjs-dist进行PDF解析工具
 const pdfWorkerUrl = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).href;
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 
 export default function useResumeAnalysis(){
+    const { info, success, error } = useToast();
     const [resumeText, setResumeText] = useState(''); //从PDF里抠出的纯文字
     const [resumeAnalysis, setResumeAnalysis] = useState(''); //给出的诊断报告
     const [isStreaming, setIsStreaming] = useState(false); //看是否在运行
@@ -14,7 +16,9 @@ export default function useResumeAnalysis(){
         const file = e.target.files?.[0];
         if(!file) return;
 
-        try{ //FileReader把pdf解构成0和1喂给getDocument
+        try{ 
+            //FileReader把pdf解构成0和1喂给getDocument
+            info('简历上传成功，开始解析...');
             const reader = new FileReader();
             reader.readAsArrayBuffer(file);
             reader.onload = async () => {
@@ -29,9 +33,11 @@ export default function useResumeAnalysis(){
                     fullText += pageText + '\n'; 
                 }
                 setResumeText(fullText);
+                success('简历解析完成');
             };
         }catch(error){
             console.error('PDF Error:',error);
+            error('简历解析失败');
         }
     };
 
@@ -40,6 +46,7 @@ export default function useResumeAnalysis(){
 
         setResumeAnalysis('');
         setIsStreaming(true);
+        info('AI分析中')
 
         try{
             const response = await fetch('/api/analyze-resume',{
@@ -98,9 +105,11 @@ export default function useResumeAnalysis(){
                     }
                 }
             }
+            success('分析完成');
         }catch(error: any){
             console.error('Streaming Error:', error);
             setResumeAnalysis('请求失败，请稍后重试');
+            error('简历分析失败')
         }finally{
             setIsStreaming(false);
         }

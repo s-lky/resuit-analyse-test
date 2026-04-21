@@ -52,8 +52,7 @@ function ToastItem({ toast, onRemove } : { toast: Toast; onRemove:(id:number) =>
     };
 
     return (
-        <div
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg transition-all duration-300, cursor-pointer &{colors{toast.type}} ${
+        <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg transition-all duration-300 cursor-pointer ${colors[toast.type]} ${
                 isExiting ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'
             }`}
             onClick={handleClick}
