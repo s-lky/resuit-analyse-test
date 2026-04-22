@@ -3,8 +3,8 @@ import { BarChart3, Settings, Mic, FileText } from "lucide-react"; //图标库
 
 //接收App的安排
 interface SidebarProps{
-    activeTab: 'interview' | 'resume'; //现在正在的部分
-    setActiveTab: (tab: 'interview' | 'resume') => void; //换台
+    activeTab: 'interview' | 'resume' |'history'; //现在正在的部分
+    setActiveTab: (tab: 'interview' | 'resume' | 'history') => void; //换台
 }
 
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps){
@@ -36,7 +36,10 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps){
                 </div>
 
                 {/* 还没做完-先空着，opacity人按钮半透明，cursor-not-allowed禁止通行 */}
-                <div className="nav-item opacity-50 curcor-not-allowed">
+                <div 
+                    className={`nav-item ${activeTab === 'history' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('history')}
+                >
                     <BarChart3 size={18} />
                     历史数据报告
                 </div>
