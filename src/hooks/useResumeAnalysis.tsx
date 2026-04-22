@@ -49,6 +49,7 @@ export default function useResumeAnalysis(){
         info('AI分析中')
 
         try{
+            // 对于SSE流式响应，仍然需要使用fetch，因为axios不原生支持SSE
             const response = await fetch('/api/analyze-resume',{
                 method:'POST',
                 headers:{ 'Content-Type':'application/json' },

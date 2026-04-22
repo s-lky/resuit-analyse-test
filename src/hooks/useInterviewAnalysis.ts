@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { analyzeEngagement, transcribeAudio } from "../lib/ai";
+import apiClient from "../lib/axiosConfig";
 
 //制作汇报表格的模版
 export interface TranscriptItem{ //空白表格1：速记单只填说的人(AB)和说了什么
@@ -60,14 +61,11 @@ export default function useInterviewAnalysis(option?: UseInterviewAnalysisOption
                 const engagement = await analyzeEngagement(transcriptText);
                 setEngagementData(engagement);
 
-                //生成辅导卡，fetch给后台服务器发数据，返回辅导卡数据json并存在setCoaching里
-                const coachingRes = await fetch('/api/coaching-card',{
-                    method: 'POST',
-                    headers:{ 'Content-Type':'application/json' },
-                    body: JSON.stringify({ transcript:transcriptText }),
+                //生成辅导卡，用axios发送数据
+                const coachingRes = await apiClient.post('/api/coaching-card',{
+                    transcript:transcriptText,
                 });
-                const coachingData = await coachingRes.json();
-                setCoaching(coachingData);
+                setCoaching(coachingRes);
 
                 option?.onToast?.('分析完成','success');
             };
