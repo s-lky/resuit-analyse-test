@@ -1,5 +1,5 @@
 // src/components/HistoryReportPanel.tsx
-import { TrendingUp, Clock, Award, FileText, Eye } from 'lucide-react';
+import { TrendingUp, Clock, Award, Eye } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // 模拟历史数据（后续可接后端API）
@@ -76,7 +76,7 @@ export default function HistoryReportPanel() {
                 {advantages.map((tag, index) => (
                   <span
                     key={index}
-                    className="px-3 py-1 bg-gradient-to-r from-green-50 to-emerald-50 text-green-600 text-sm rounded-full border border-green-200 font-medium"
+                    className="px-3 py-1 bg-linear-to-r from-green-50 to-emerald-50 text-green-600 text-sm rounded-full border border-green-200 font-medium"
                   >
                     {tag}
                   </span>
