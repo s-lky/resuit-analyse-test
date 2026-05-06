@@ -5,6 +5,8 @@ import express from 'express';
 import multer from 'multer';
 import OpenAI from 'openai';
 import { createServer as createViteServer } from 'vite';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -22,6 +24,146 @@ const upload = multer({ dest: 'uploads/' });
 app.use(express.json({ limit:'50mb' }));
 app.use(express.urlencoded({ extended: true, limit:'100mb' }));
 
+// JWT密钥
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// 模拟用户数据库（实际项目中应使用真实数据库）
+const users: Array<{
+    id: string;
+    username: string;
+    email: string;
+    password: string;
+    createdAt: Date;
+}> = [];
+
+// 生成JWT令牌
+const generateToken = (userId: string) => {
+    return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
+};
+
+// 验证JWT中间件
+const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+    return res.status(401).json({ message: '访问令牌缺失' });
+        }
+
+    try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    (req as any).userId = decoded.userId;
+        next();
+    } catch (error) {
+    return res.status(403).json({ message: '无效的访问令牌' });
+        }
+    };
+
+// 用户注册接口
+app.post('/api/auth/register', async (req, res) => {
+    try {
+    const { username, email, password } = req.body;
+
+    // 验证输入
+    if (!username || !email || !password) {
+        return res.status(400).json({ message: '请填写所有必填字段' });
+    }
+
+    // 检查用户名是否已存在
+    if (users.some(u => u.username === username)) {
+        return res.status(400).json({ message: '用户名已存在' });
+    }
+
+    // 检查邮箱是否已存在
+    if (users.some(u => u.email === email)) {
+        return res.status(400).json({ message: '邮箱已被注册' });
+    }
+
+    // 密码加密
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // 创建新用户
+    const newUser = {
+        id: Date.now().toString(),
+        username,
+        email,
+        password: hashedPassword,
+        createdAt: new Date()
+    };
+
+    users.push(newUser);
+
+    // 生成JWT令牌
+    const token = generateToken(newUser.id);
+
+    // 返回用户信息（不包含密码）
+    const { password: _, ...userWithoutPassword } = newUser;
+    res.status(201).json({
+        token,
+        user: userWithoutPassword
+        });
+    } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ message: '注册失败，请稍后重试' });
+        }
+});
+
+// 用户登录接口
+app.post('/api/auth/login', async (req, res) => {
+    try {
+    const { username, password } = req.body;
+
+    // 验证输入
+    if (!username || !password) {
+        return res.status(400).json({ message: '请填写用户名和密码' });
+    }
+
+    // 查找用户
+    const user = users.find(u => u.username === username);
+    if (!user) {
+        return res.status(401).json({ message: '用户名或密码错误' });
+    }
+
+    // 验证密码
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+        return res.status(401).json({ message: '用户名或密码错误' });
+    }
+
+    // 生成JWT令牌
+    const token = generateToken(user.id);
+
+    // 返回用户信息（不包含密码）
+    const { password: _, ...userWithoutPassword } = user;
+    res.json({
+        token,
+        user: userWithoutPassword
+        });
+    } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: '登录失败，请稍后重试' });
+    }
+});
+
+// 获取当前用户信息接口
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+    try {
+    const userId = (req as any).userId;
+    const user = users.find(u => u.id === userId);
+    
+    if (!user) {
+        return res.status(404).json({ message: '用户不存在' });
+    }
+
+    // 返回用户信息（不包含密码）
+    const { password: _, ...userWithoutPassword } = user;
+    res.json(userWithoutPassword);
+    } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ message: '获取用户信息失败' });
+    }
+});
+
 const deepseek = new OpenAI({
     apiKey: process.env.DEEPSEEK_API_KEY || 'dummy',
     baseURL: 'https://api.deepseek.com',
@@ -29,7 +171,7 @@ const deepseek = new OpenAI({
 
 const qwenClient = new OpenAI({
     apiKey: process.env.DASHSCOPE_API_KEY || 'dummy',
-  baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
 });
 
 // 接口1：音频转录-TranscriptBox组件
@@ -209,7 +351,7 @@ app.post('/api/coaching-card', async(req,res) =>{
             model: 'deepseek-chat',
             messages:[ // 强制要求返回固定JSON结构：优点3条、机会3条
                 { role: 'system', 
-                  content:'你是一个面试教练。根据提供的面试对话记录，生成一份"辅导卡"。列出被面试人员做得好的3件事和错过的3个机会。请以JSON格式返回，格式如下：{"strengths": ["...", "...", "..."], "opportunities": ["...", "...", "..."]}' 
+                    content:'你是一个面试教练。根据提供的面试对话记录，生成一份"辅导卡"。列出被面试人员做得好的3件事和错过的3个机会。请以JSON格式返回，格式如下：{"strengths": ["...", "...", "..."], "opportunities": ["...", "...", "..."]}' 
                 },
                 { role: 'user', content:transcript }
             ],
@@ -241,7 +383,7 @@ if(process.env.NODE_ENV !== 'production'){
 app.listen(port,'0.0.0.0',() =>{
     console.log(`
         Server started
-        Local:   http://localhost:${port}        
+        Local:   http://localhost:${port}
         Network: http://127.0.0.1:${port}
         `);
 })

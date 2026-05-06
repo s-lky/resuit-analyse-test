@@ -1,13 +1,15 @@
 // 侧边栏组件-菜单按钮，切换不同业务
-import { BarChart3, Settings, Mic, FileText } from "lucide-react"; //图标库
+import { BarChart3, Settings, Mic, FileText, LogOut, User } from "lucide-react"; //图标库
 
 //接收App的安排
 interface SidebarProps{
     activeTab: 'interview' | 'resume' |'history'; //现在正在的部分
     setActiveTab: (tab: 'interview' | 'resume' | 'history') => void; //换台
+    onLogout: () => void;
+    user: { username: string; email: string } | null;
 }
 
-export default function Sidebar({ activeTab, setActiveTab }: SidebarProps){
+export default function Sidebar({ activeTab, setActiveTab, onLogout, user }: SidebarProps){
     return(
         // 侧边栏的外壳和logo，<aside> 规定了这个面板的宽度（w-64）
         <aside className="w-64 bg-sidebar-bg text-white flex flex-col p-6">
@@ -49,7 +51,29 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps){
                 </div>
             </nav>
 
-            <div className="mt-auto pt-6 border-t border-white/10 text-xs text-white/40">
+            {/* 用户信息和登出按钮 */}
+            <div className="mt-auto pt-6 border-t border-white/10">
+                {user && (
+                    <div className="mb-4">
+                        <div className="flex items-center gap-2 text-sm">
+                            <User size={16} />
+                            <span>{user.username}</span>
+                        </div>
+                        <div className="text-xs text-white/60 mt-1 truncate">
+                            {user.email}
+                        </div>
+                    </div>
+                )}
+                <button
+                    onClick={onLogout}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                    <LogOut size={16} />
+                    退出登录
+                </button>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-white/10 text-xs text-white/40">
                 Powered by Deepseek-v3&Qwen
             </div>
         </aside>
