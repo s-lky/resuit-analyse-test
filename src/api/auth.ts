@@ -9,6 +9,12 @@ export const authApi = {
     login: (data: LoginRequest) =>
         apiClient.post<AuthResponse>('/auth/login', data),
 
-    getCurrentUser:() =>
+    getCurrentUser: () =>
         apiClient.get<User>('/auth/me'),
+
+    changePassword: (data: ChangePasswordRequest) =>
+        apiClient.post<void>('/auth/change-password', data),
+
+    deleteAccount: () =>
+        apiClient.delete<void>('/auth/account'),
 };

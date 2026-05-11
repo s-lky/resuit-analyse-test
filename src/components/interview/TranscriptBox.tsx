@@ -9,7 +9,7 @@ interface Props{
 
 //准备排版
 export default function TranscriptBox({ transcript }: Props){
-    if(transcript.length === 0){
+    if(!transcript?.length){
         return(
             <div className="h-full flex flex-col items-center justify-center text-text-secondary border-2 border-dashed border-border rounded-xl">
                 <p>暂无数据，请上传音频文件开始分析</p>

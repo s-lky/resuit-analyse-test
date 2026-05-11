@@ -13,7 +13,7 @@ export default function EngagementChart({ data }: Props){
                 <span>参与度情绪波动</span>
             </div>
             <div className="flex-1 p-4">
-                {data.length > 0 ? (
+                {(data?.length ?? 0) > 0 ? (
                     // ResponsiveContainer自动拉伸到刚好填满的程度
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={data}>

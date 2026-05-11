@@ -16,7 +16,16 @@ export default defineConfig({
 
   // 开发服务器（标准配置）
   server: {
-    port: 3000, // 可选，默认端口
-    open: true, // 可选，自动打开浏览器
-  },
+    port: 3000,
+    // 注意：由于使用了 VITE_API_BASE_URL 配置完整后端地址，不需要代理
+    // 如果需要代理，可以取消下面的注释并修改 .env 中的 VITE_API_BASE_URL 为 '/api'
+    /*
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      }
+    }
+    */
+  }
 });

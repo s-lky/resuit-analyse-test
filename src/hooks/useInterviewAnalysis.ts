@@ -1,19 +1,46 @@
 import { useState } from "react";
-import { analyzeEngagement, transcribeAudio } from "../lib/ai";
-import apiClient from "../lib/axiosConfig";
+import { transcribeAudio, analyzeEngagement, generateCoachingCard } from "../api/interview";
+import type { TranscriptItem, CoachingData, TranscribeAudioResponse } from "../types/api";
 
-//制作汇报表格的模版
-export interface TranscriptItem{ //空白表格1：速记单只填说的人(AB)和说了什么
-    speaker: 'A'|'B';
-    text: string;
-}
-export interface CoachingData{
-    strengths:string[];
-    opportunities: string[];
-}
+export type { TranscriptItem, CoachingData } from "../types/api";
 
 interface UseInterviewAnalysisOptions{
     onToast ?: (message: string, type: 'success' | 'error' | 'info') => void;
+}
+
+/** 兼容 Spring Result.data 为数组，或 { transcript: [] }（与简易 server 直出数组） */
+function normalizeTranscriptPayload(res: unknown): TranscriptItem[] {
+    if (Array.isArray(res)) return res as TranscriptItem[];
+    if (res && typeof res === "object" && "transcript" in res) {
+        const t = (res as TranscribeAudioResponse).transcript;
+        return Array.isArray(t) ? t : [];
+    }
+    return [];
+}
+
+function readFileAsBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const raw = reader.result as string;
+            const base64 = raw.includes(",") ? raw.split(",")[1] : raw;
+            resolve(base64 ?? "");
+        };
+        reader.onerror = () => reject(reader.error ?? new Error("读取文件失败"));
+        reader.readAsDataURL(file);
+    });
+}
+
+function normalizeEngagementPayload(data: unknown): any[] {
+    return Array.isArray(data) ? data : [];
+}
+
+function normalizeCoachingPayload(data: unknown): CoachingData | null {
+    if (!data || typeof data !== "object") return null;
+    const s = (data as CoachingData).strengths;
+    const o = (data as CoachingData).opportunities;
+    if (!Array.isArray(s) || !Array.isArray(o)) return null;
+    return { strengths: s, opportunities: o };
 }
 
 //四大记忆区
@@ -42,38 +69,65 @@ export default function useInterviewAnalysis(option?: UseInterviewAnalysisOption
         }
 
         setIsAnalyzing(true);
+        setCoaching(null);
         try{
+            const base64 = await readFileAsBase64(file);
+            option?.onToast?.('上传成功，开始分析','info');
 
-            // 把拿到的声音文件，翻译成一串能通过网络传输的代码
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = async () => {
-                const base64 = (reader.result as string).split(',')[1];
+            const res = await transcribeAudio({
+                audioBase64: base64,
+                mimeType: file.type
+            });
+            const transcriptList = normalizeTranscriptPayload(res);
+            setTranscript(transcriptList);
 
-                option?.onToast?.('上传成功，开始分析','info');
+            if (transcriptList.length === 0) {
+                option?.onToast?.('转录结果为空，请检查接口返回是否为 transcript 数组或 { transcript }', 'error');
+                return;
+            }
 
-                //把代码扔给第一个AI模型transcribeAudio
-                const res = await transcribeAudio(base64, file.type);
-                setTranscript(res);
+            const payload = JSON.stringify(transcriptList);
 
-                //把文字拼接连续然后扔给第二个模型analyzeEngagement计算数据然后存在setEngagementData
-                const transcriptText = res.map((item:any) => `${item.speaker}:${item.text}`).join('\n');
-                const engagement = await analyzeEngagement(transcriptText);
-                setEngagementData(engagement);
+            try {
+                const engagement = await analyzeEngagement({ transcript: payload });
+                setEngagementData(normalizeEngagementPayload(engagement));
+            } catch (engErr: unknown) {
+                console.error(engErr);
+                setEngagementData([]);
+                option?.onToast?.('参与度分析失败，已保留转录文本', 'error');
+            }
 
-                //生成辅导卡，用axios发送数据
-                const coachingRes = await apiClient.post('/api/coaching-card',{
-                    transcript:transcriptText,
-                });
-                setCoaching(coachingRes);
-
-                option?.onToast?.('分析完成','success');
-            };
+            try {
+                const coachingRes = await generateCoachingCard({ transcript: payload });
+                const coachingNorm = normalizeCoachingPayload(coachingRes);
+                setCoaching(coachingNorm);
+                if (coachingNorm) {
+                    option?.onToast?.('分析完成', 'success');
+                } else {
+                    option?.onToast?.('辅导卡数据格式异常，已展示转录与参与度', 'info');
+                }
+            } catch (coachingErr: unknown) {
+                console.error(coachingErr);
+                const msg =
+                    coachingErr && typeof coachingErr === "object" && "message" in coachingErr
+                        ? String((coachingErr as { message?: string }).message)
+                        : "辅导卡生成失败";
+                option?.onToast?.(msg, 'error');
+                option?.onToast?.('已保留语音转录与参与度分析结果', 'info');
+            }
         }catch(error){
             console.error(error);
-            option?.onToast?.('分析失败，请检查控制台网络请求','error');
+            const msg =
+                error && typeof error === "object" && "message" in error
+                    ? String((error as { message?: string }).message)
+                    : "";
+            option?.onToast?.(msg ? `分析失败：${msg}` : '分析失败，请检查控制台网络请求','error');
+            setTranscript([]);
+            setEngagementData([]);
+            setCoaching(null);
         }finally{
             setIsAnalyzing(false);
+            e.target.value = '';
         }
     };
 

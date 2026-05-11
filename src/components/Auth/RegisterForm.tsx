@@ -60,13 +60,17 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
     setIsLoading(true);
     try {
         const { confirmPassword, ...registerData } = formData;
+        console.log('发送注册请求:', registerData);
         const response = await authApi.register(registerData);
+        console.log('注册响应:', response);
         localStorage.setItem('authToken', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));
         success('注册成功！');
         onRegisterSuccess();
     } catch (err: any) {
-        error(err.response?.data?.message || '注册失败，请稍后重试');
+        console.error('注册错误详情:', err);
+        console.error('错误响应:', err.response);
+        error(err.response?.data?.message || err.message || '注册失败，请稍后重试');
     } finally {
         setIsLoading(false);
     }

@@ -13,7 +13,7 @@ export default function CoachingCard({ data }: Props){
                 <span>AI智能辅导卡</span>
             </div>
             <div className="flex-1 p-5 overflow-y-auto space-y-6">
-                {data ? (
+                {data && Array.isArray(data.strengths) && Array.isArray(data.opportunities) ? (
                     <>
                         <div> 
                             {/* text-success（绿色代码），并且加上了一个绿色的打钩图标 CheckCircle */}

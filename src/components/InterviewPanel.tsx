@@ -31,7 +31,7 @@ export default function InterviewPanel(){
                 <div className="card-header">
                     <span>对话记录分析</span>
                     {/* 记录什么时候显示“上传”按钮 */}
-                    {transcript.length === 0 && ( //如果还没上传过就显示出来
+                    {(transcript?.length ?? 0) === 0 && ( //如果还没上传过就显示出来
                         <label className="flex items-center gap-2 text-accent cursor-pointer hover:underline">
                             <Upload size={14} />
                             上传面试音频

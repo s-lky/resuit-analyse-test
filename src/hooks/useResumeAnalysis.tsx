@@ -1,6 +1,7 @@
 import * as pdfjsLib from 'pdfjs-dist'
 import { useState } from 'react';
 import { useToast } from './useToast';
+import { analyzeResumeStream } from '../api/resume';
 //引入pdfjs-dist进行PDF解析工具
 const pdfWorkerUrl = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).href;
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
@@ -49,63 +50,10 @@ export default function useResumeAnalysis(){
         info('AI分析中')
 
         try{
-            // 对于SSE流式响应，仍然需要使用fetch，因为axios不原生支持SSE
-            const response = await fetch('/api/analyze-resume',{
-                method:'POST',
-                headers:{ 'Content-Type':'application/json' },
-                body: JSON.stringify({ text: resumeText }),
+            // 使用封装好的SSE流式API
+            await analyzeResumeStream(resumeText, (chunk) => {
+                setResumeAnalysis(prev => prev + chunk);
             });
-
-            if(!response.ok){
-                throw new Error(`请求失败: ${response.status}`);
-            }
-
-            const reader = response.body?.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-
-            if(reader){
-                let isDone = false;
-                while(!isDone){
-                    const { done, value } = await reader.read();
-                    if(done) break;
-
-                    // 解码并添加到缓冲区
-                    buffer += decoder.decode(value, { stream: true });
-                    
-                    // 按行分割处理
-                    const lines = buffer.split('\n');
-                    // 保留最后一个不完整的行
-                    buffer = lines.pop() || '';
-
-                    for(const line of lines){
-                        if(line.startsWith('data: ')){
-                            const data = line.slice(6).trim();
-                            
-                            if(data === '[DONE]'){
-                                isDone = true;
-                                break;
-                            }
-                            
-                            if(data){
-                                try{
-                                    const parsed = JSON.parse(data);
-                                    if(parsed.content){
-                                        setResumeAnalysis(prev => prev + parsed.content);
-                                    }else if(parsed.error){
-                                        console.error('分析错误:', parsed.error);
-                                        setResumeAnalysis('分析失败：' + parsed.error);
-                                        isDone = true;
-                                        break;
-                                    }
-                                }catch(e){
-                                    console.warn('JSON 解析错误:', e);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
             success('分析完成');
         }catch(error: any){
             console.error('Streaming Error:', error);
