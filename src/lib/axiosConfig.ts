@@ -16,7 +16,7 @@ apiClient.interceptors.request.use(
     (config) => {
 
         //在这里添加token
-        // 排除不需要认证的接口（注册、登录）
+        // 排除不需要认证的接口(注册、登录)
         const publicApis = ['/auth/register', '/auth/login'];
         const isPublicApi = publicApis.some(api => config.url?.includes(api));
         
@@ -24,6 +24,19 @@ apiClient.interceptors.request.use(
             const token = localStorage.getItem('authToken');
             if(token){
                 config.headers.Authorization = `Bearer ${token}`;
+            }
+            
+            // 添加userId到请求头
+            const userStr = localStorage.getItem('user');
+            if(userStr){
+                try{
+                    const user = JSON.parse(userStr);
+                    if(user && user.id){
+                        config.headers['userId'] = user.id;
+                    }
+                }catch(e){
+                    console.error('Failed to parse user from localStorage:', e);
+                }
             }
         }
         return config;

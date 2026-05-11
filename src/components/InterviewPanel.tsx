@@ -14,7 +14,7 @@ export default function InterviewPanel(){
         transcript,  //面试音频文字记录
         engagementData, //用户表现的数据图表材料
         coaching, //面试建议
-        handleAudioUpload, 
+        handleAudioUpload,
     } = useInterviewAnalysis({
         onToast: (message, type) => {
             if(type === 'success') success(message);
