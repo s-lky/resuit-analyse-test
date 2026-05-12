@@ -3,9 +3,8 @@ import axios, { type AxiosResponse } from 'axios';
 // 创建axios实例
 const apiClient = axios.create({
 
-    //从环境变量获取基础URL
     baseURL: import.meta.env.VITE_API_BASE_URL || 'api',
-    timeout: 30000,
+    timeout: 120000,
     headers:{
         'Content-Type': 'application/json',
     },

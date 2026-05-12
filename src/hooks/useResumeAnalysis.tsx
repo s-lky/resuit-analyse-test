@@ -1,24 +1,44 @@
 import * as pdfjsLib from 'pdfjs-dist'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from './useToast';
 import { analyzeResumeStream } from '../api/resume';
-//引入pdfjs-dist进行PDF解析工具
+import { saveResumeAnalysis } from '../api/history';
+
 const pdfWorkerUrl = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).href;
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
+const STORAGE_KEY_RESUME_TEXT = 'resume_text';
+const STORAGE_KEY_RESUME_ANALYSIS = 'resume_analysis';
 
 export default function useResumeAnalysis(){
     const { info, success, error } = useToast();
-    const [resumeText, setResumeText] = useState(''); //从PDF里抠出的纯文字
-    const [resumeAnalysis, setResumeAnalysis] = useState(''); //给出的诊断报告
-    const [isStreaming, setIsStreaming] = useState(false); //看是否在运行
+    
+    const storedText = sessionStorage.getItem(STORAGE_KEY_RESUME_TEXT) || '';
+    const storedAnalysis = sessionStorage.getItem(STORAGE_KEY_RESUME_ANALYSIS) || '';
+    
+    const [resumeText, setResumeText] = useState(storedText);
+    const [resumeAnalysis, setResumeAnalysis] = useState(storedAnalysis);
+    const [isStreaming, setIsStreaming] = useState(false);
+
+    useEffect(() => {
+        if (resumeText) {
+            sessionStorage.setItem(STORAGE_KEY_RESUME_TEXT, resumeText);
+        }
+        if (resumeAnalysis) {
+            sessionStorage.setItem(STORAGE_KEY_RESUME_ANALYSIS, resumeAnalysis);
+        }
+    }, [resumeText, resumeAnalysis]);
+
+    const loadFromHistory = (data: { resumeText: string; analysisResult: string }) => {
+        setResumeText(data.resumeText);
+        setResumeAnalysis(data.analysisResult);
+    };
 
     const handleResumeUpload = async(e:React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if(!file) return;
 
         try{ 
-            //FileReader把pdf解构成0和1喂给getDocument
             info('简历上传成功，开始解析...');
             const reader = new FileReader();
             reader.readAsArrayBuffer(file);
@@ -26,7 +46,6 @@ export default function useResumeAnalysis(){
                 const typedarray = new Uint8Array(reader.result as ArrayBuffer);
                 const pdf = await pdfjsLib.getDocument(typedarray).promise;
                 let fullText = '';
-                //循环遍历简历，用join(' ')拼成一整段，每一页都塞进fullText，最后存入setResumeText
                 for(let i = 1;i <= pdf.numPages;i++){
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
@@ -34,6 +53,8 @@ export default function useResumeAnalysis(){
                     fullText += pageText + '\n'; 
                 }
                 setResumeText(fullText);
+                setResumeAnalysis('');
+                sessionStorage.removeItem(STORAGE_KEY_RESUME_ANALYSIS);
                 success('简历解析完成');
             };
         }catch(error){
@@ -49,12 +70,26 @@ export default function useResumeAnalysis(){
         setIsStreaming(true);
         info('AI分析中')
 
+        let fullAnalysisResult = '';
+
         try{
-            // 使用封装好的SSE流式API
             await analyzeResumeStream(resumeText, (chunk) => {
                 setResumeAnalysis(prev => prev + chunk);
+                fullAnalysisResult += chunk;
             });
             success('分析完成');
+            
+            try {
+                await saveResumeAnalysis({
+                    fileName: '简历分析_' + new Date().toLocaleDateString(),
+                    content: resumeText,
+                    analysisResult: fullAnalysisResult,
+                    score: 75,
+                });
+                info('已保存到历史记录');
+            } catch (saveError) {
+                console.error('保存历史记录失败:', saveError);
+            }
         }catch(error: any){
             console.error('Streaming Error:', error);
             setResumeAnalysis('请求失败，请稍后重试');
@@ -64,12 +99,12 @@ export default function useResumeAnalysis(){
         }
     };
 
-    //打包发给ResumePanel
     return{
         resumeText,
         resumeAnalysis,
         isStreaming,
         handleResumeUpload,
         analyzeResume,
+        loadFromHistory,
     };
 }

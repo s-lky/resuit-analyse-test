@@ -1,20 +1,25 @@
-// 面试音频分析面板
 import useInterviewAnalysis from '../hooks/useInterviewAnalysis';
-import TranscriptBox from './interview/TranscriptBox'; //记录音频里的话
-import EngagementChart from './interview/EngagementChart'; //负责画图
-import CoachingCard from './interview/CoachingCard'; //给建议
-import { Loader2, Upload} from 'lucide-react';
+import TranscriptBox from './interview/TranscriptBox';
+import EngagementChart from './interview/EngagementChart';
+import CoachingCard from './interview/CoachingCard';
+import InterviewHistoryModal from './interview/HistoryModal';
+import { Loader2, Upload, Download, FileText, FileType, File, History } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
+import { useState } from 'react';
 
 export default function InterviewPanel(){
     const { success, error, info } = useToast();
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
 
     const{
-        isAnalyzing,  //是否正在思考
-        transcript,  //面试音频文字记录
-        engagementData, //用户表现的数据图表材料
-        coaching, //面试建议
+        isAnalyzing,
+        transcript,
+        engagementData,
+        coaching,
         handleAudioUpload,
+        exportTranscript,
+        loadFromHistory,
     } = useInterviewAnalysis({
         onToast: (message, type) => {
             if(type === 'success') success(message);
@@ -23,29 +28,87 @@ export default function InterviewPanel(){
         }
     });
 
+    const handleExport = (format: 'pdf' | 'word' | 'md') => {
+        try {
+            exportTranscript(transcript, format);
+            success(`已导出为${format.toUpperCase()}格式`);
+            setShowExportMenu(false);
+        } catch (err: any) {
+            error(err.message || '导出失败');
+        }
+    };
+
     return(
-        // 屏幕三等分，文字记录占两份，图表和建议占一份
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 overflow-hidden">
-            {/* 对话记录 */}
             <div className="lg:col-span-2 card h-full">
                 <div className="card-header">
                     <span>对话记录分析</span>
-                    {/* 记录什么时候显示“上传”按钮 */}
-                    {(transcript?.length ?? 0) === 0 && ( //如果还没上传过就显示出来
-                        <label className="flex items-center gap-2 text-accent cursor-pointer hover:underline">
-                            <Upload size={14} />
-                            上传面试音频
-                            <input 
-                                type="file" 
-                                className="hidden" //隐藏丑丑的网页自带按钮
-                                accept="audio/mp3, audio/mpeg, audio/m4a, audio/wav"
-                                onChange={handleAudioUpload}
-                                />
-                        </label>
-                    )}
+                    <div className="flex items-center gap-3">
+                        {/* 历史记录按钮 */}
+                        <button
+                            onClick={() => setShowHistory(true)}
+                            className="flex items-center gap-2 text-gray-600 hover:text-accent cursor-pointer transition-colors"
+                        >
+                            <History size={14} />
+                            历史记录
+                        </button>
+                        
+                        {/* 导出菜单 */}
+                        {(transcript?.length ?? 0) > 0 && !isAnalyzing && (
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowExportMenu(!showExportMenu)}
+                                    className="flex items-center gap-2 text-accent cursor-pointer hover:underline"
+                                >
+                                    <Download size={14} />
+                                    导出
+                                </button>
+                                
+                                {showExportMenu && (
+                                    <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10 min-w-[150px]">
+                                        <button
+                                            onClick={() => handleExport('pdf')}
+                                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                                        >
+                                            <FileText size={14} />
+                                            导出为 PDF
+                                        </button>
+                                        <button
+                                            onClick={() => handleExport('word')}
+                                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                                        >
+                                            <FileType size={14} />
+                                            导出为 Word
+                                        </button>
+                                        <button
+                                            onClick={() => handleExport('md')}
+                                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                                        >
+                                            <File size={14} />
+                                            导出为 Markdown
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* 上传按钮 */}
+                        {(transcript?.length ?? 0) === 0 && (
+                            <label className="flex items-center gap-2 text-accent cursor-pointer hover:underline">
+                                <Upload size={14} />
+                                上传面试音频
+                                <input 
+                                    type="file" 
+                                    className="hidden"
+                                    accept="audio/mp3, audio/mpeg, audio/m4a, audio/wav"
+                                    onChange={handleAudioUpload}
+                                    />
+                            </label>
+                        )}
+                    </div>
                 </div>
                 <div className='flex-1 p-6 overflow-y-auto space-y-4'>
-                    {isAnalyzing ? ( //确认在什么时候可以显示转圈圈
+                    {isAnalyzing ? (
                         <div className='h-full flex flex-col items-center justify-center text-text-secondary gap-3'>
                             <Loader2 className="animate-spin" size={32} />
                             <p>正在通过AI进行语音转录与分析</p>
@@ -56,13 +119,17 @@ export default function InterviewPanel(){
                 </div>
             </div>
 
-            {/* 右侧：图标+辅导卡 */}
-            {/* 把engagementData给engagementChart画成图 */}
-            {/* 吧建议写在卡片上 */}
             <div className="flex flex-col gap-6 overflow-hidden">
                     <EngagementChart data={engagementData} />
                     <CoachingCard data={coaching} />
             </div>
+
+            {/* 历史记录弹窗 */}
+            <InterviewHistoryModal
+                isOpen={showHistory}
+                onClose={() => setShowHistory(false)}
+                onLoadHistory={loadFromHistory}
+            />
         </div>
     );
 }

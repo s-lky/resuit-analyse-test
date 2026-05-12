@@ -3,12 +3,15 @@ import type { HistoryDashboard } from "../types/api"
 import { getHistoryDashboard } from "../api/history";
 import { TrendingUp, Award, Clock, Eye } from 'lucide-react';
 import { LineChart, Line, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Legend, Tooltip } from "recharts";
-
+import { useToast } from "../hooks/useToast";
 
 export default function HistroyReportPanel(){
+  const { success, error } = useToast();
   const[data, setData] = useState<HistoryDashboard | null>(null);
   const[loading, setLoading] = useState(true);
-  const[error, setError] = useState<string | null>(null);
+  const[errorState, setErrorState] = useState<string | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [showDetail, setShowDetail] = useState(false);
 
   useEffect(() =>{
     const fetchData = async () =>{
@@ -16,9 +19,9 @@ export default function HistroyReportPanel(){
         setLoading(true);
         const result = await getHistoryDashboard();
         setData(result);
-        setError(null);
+        setErrorState(null);
       }catch(err){
-        setError('获取数据失败，请稍后重试');
+        setErrorState('获取数据失败，请稍后重试');
         console.error('Failed to fetch history data: ',err);
       }finally{
         setLoading(false);
@@ -28,6 +31,17 @@ export default function HistroyReportPanel(){
     fetchData();
   }, []);
  
+  const handleViewDetail = async (record: any) => {
+    try {
+      setSelectedRecord(record);
+      setShowDetail(true);
+      // 这里可以根据 record.analysisId 调用详情接口
+      success('已打开详情页面');
+    } catch (err) {
+      error('获取详情失败');
+    }
+  };
+
   if(loading){
     return(
       <div className="flex-1 flex items-center justify-center">
@@ -39,11 +53,11 @@ export default function HistroyReportPanel(){
     );
   }
 
-  if(error){
+  if(errorState){
     return(
       <div className="flex-1 flex- items-center justify-center">
         <div className="text-center text-red-500">
-          <p>{error}</p>
+          <p>{errorState}</p>
         </div>
       </div>
     );
@@ -218,7 +232,10 @@ export default function HistroyReportPanel(){
                                             <span className="text-sm font-semibold text-accent">{record.score}分</span>
                                         </td>
                                         <td className="py-3 px-4">
-                                            <button className="flex items-center gap-1 px-3 py-1 text-sm text-accent hover:text-accent/80 transition-colors">
+                                            <button 
+                                                onClick={() => handleViewDetail(record)}
+                                                className="flex items-center gap-1 px-3 py-1 text-sm text-accent hover:text-accent/80 transition-colors"
+                                            >
                                                 <Eye size={14} />
                                                 查看报告
                                             </button>
@@ -230,6 +247,37 @@ export default function HistroyReportPanel(){
                     </div>
                 </div>
             </div>
+
+        {/* 详情弹窗 */}
+        {showDetail && selectedRecord && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-xl shadow-lg max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+                    <div className="p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-semibold">
+                                {selectedRecord.type}分析报告 - {selectedRecord.fileName}
+                            </h2>
+                            <button 
+                                onClick={() => setShowDetail(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            <p><strong>日期：</strong>{selectedRecord.date}</p>
+                            <p><strong>评分：</strong>{selectedRecord.score}分</p>
+                            <p><strong>类型：</strong>{selectedRecord.type}</p>
+                            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                                <p className="text-sm text-gray-600">
+                                    详情功能开发中，将显示完整的分析内容和数据...
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
     </div> 
   );
 }

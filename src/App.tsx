@@ -14,14 +14,8 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<'interview' | 'resume' | 'history' | 'settings'>('interview');
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const { toasts, removeToast } = useToast();
-  const { user, isAuthenticated, isLoading, logout,checkAuth } = useAuth();
+  const { user, isAuthenticated, isLoading, logout, checkAuth } = useAuth();
 
-  //登录或注册成功后的回调
-  const handleAuthSuccess = async () =>{
-    await checkAuth();
-  };
-
-  // 如果正在加载认证状态，显示加载界面
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-bg">
@@ -33,19 +27,22 @@ function AppContent() {
     );
   }
 
-  // 如果未认证，显示登录/注册界面
   if (!isAuthenticated) {
     return (
       <>
         {authView === 'login' ? (
           <LoginForm
             onSwitchToRegister={() => setAuthView('register')}
-            onLoginSuccess={() => {}}
+            onLoginSuccess={async () => {
+              await checkAuth();
+            }}
           />
         ) : (
           <RegisterForm
             onSwitchToLogin={() => setAuthView('login')}
-            onRegisterSuccess={() => {}}
+            onRegisterSuccess={async () => {
+              await checkAuth();
+            }}
           />
         )}
         <ToastContainer toasts={toasts} removeToast={removeToast} />
@@ -53,7 +50,6 @@ function AppContent() {
     );
   }
 
-  // 已认证，显示主应用
   return(
     <div className="flex h-screen w-full overflow-hidden bg-bg">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={logout} user={user} />

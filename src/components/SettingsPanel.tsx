@@ -7,7 +7,7 @@
 
     export default function SettingsPanel() {
     const { user, logout } = useAuth();
-    const { addToast } = useToast();
+    const { success, error } = useToast();
     
     // 修改密码表单状态
     const [passwordForm, setPasswordForm] = useState<ChangePasswordRequest>({
@@ -25,22 +25,22 @@
         e.preventDefault();
         
         if (!passwordForm.oldPassword || !passwordForm.newPassword) {
-        addToast('请填写所有字段', 'error');
+        error('请填写所有字段');
         return;
         }
         
         if (passwordForm.newPassword.length < 6) {
-        addToast('新密码至少需要6个字符', 'error');
+        error('新密码至少需要6个字符');
         return;
         }
 
         setIsChangingPassword(true);
         try {
         await authApi.changePassword(passwordForm);
-        addToast('密码修改成功', 'success');
+        success('密码修改成功');
         setPasswordForm({ oldPassword: '', newPassword: '' });
-        } catch (error: any) {
-        addToast(error.response?.data?.message || '密码修改失败', 'error');
+        } catch (err: any) {
+        error(err.response?.data?.message || '密码修改失败');
         } finally {
         setIsChangingPassword(false);
         }

@@ -1,12 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { transcribeAudio, analyzeEngagement, generateCoachingCard } from "../api/interview";
+import { saveInterviewAnalysis } from "../api/history";
 import type { TranscriptItem, CoachingData, TranscribeAudioResponse } from "../types/api";
+import { exportToPDF, exportToWord, exportToMarkdown } from "../utils/export";
 
 export type { TranscriptItem, CoachingData } from "../types/api";
 
 interface UseInterviewAnalysisOptions{
     onToast ?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
+
+const STORAGE_KEY_TRANSCRIPT = 'interview_transcript';
+const STORAGE_KEY_ENGAGEMENT = 'interview_engagement';
+const STORAGE_KEY_COACHING = 'interview_coaching';
 
 /** 兼容 Spring Result.data 为数组，或 { transcript: [] }（与简易 server 直出数组） */
 function normalizeTranscriptPayload(res: unknown): TranscriptItem[] {
@@ -43,24 +49,132 @@ function normalizeCoachingPayload(data: unknown): CoachingData | null {
     return { strengths: s, opportunities: o };
 }
 
+function exportTranscript(transcript: TranscriptItem[], format: 'pdf' | 'word' | 'md'): void {
+    if (transcript.length === 0) {
+        throw new Error('没有可导出的转录内容');
+    }
+    
+    switch (format) {
+        case 'pdf':
+            exportToPDF(transcript);
+            break;
+        case 'word':
+            exportToWord(transcript);
+            break;
+        case 'md':
+            exportToMarkdown(transcript);
+            break;
+    }
+}
+
+async function saveAnalysisToHistory(
+    transcript: TranscriptItem[],
+    engagementData: any[],
+    coaching: CoachingData | null,
+    fileName: string
+): Promise<void> {
+    try {
+        const transcriptStr = JSON.stringify(transcript);
+        const engagementStr = JSON.stringify(engagementData);
+        const strengthsStr = JSON.stringify(coaching?.strengths || []);
+        const opportunitiesStr = JSON.stringify(coaching?.opportunities || []);
+        
+        const score = coaching && coaching.strengths.length > 0 ? 80 : 70;
+        
+        await saveInterviewAnalysis({
+            fileName,
+            audioDuration: '',
+            transcript: transcriptStr,
+            engagementData: engagementStr,
+            strengths: strengthsStr,
+            opportunities: opportunitiesStr,
+            score,
+        });
+    } catch (error) {
+        console.error('保存历史记录失败:', error);
+    }
+}
+
+function saveToSessionStorage(
+    transcript: TranscriptItem[],
+    engagementData: any[],
+    coaching: CoachingData | null
+): void {
+    try {
+        if (transcript.length > 0) {
+            sessionStorage.setItem(STORAGE_KEY_TRANSCRIPT, JSON.stringify(transcript));
+        }
+        if (engagementData.length > 0) {
+            sessionStorage.setItem(STORAGE_KEY_ENGAGEMENT, JSON.stringify(engagementData));
+        }
+        if (coaching) {
+            sessionStorage.setItem(STORAGE_KEY_COACHING, JSON.stringify(coaching));
+        }
+    } catch (error) {
+        console.error('保存到 sessionStorage 失败:', error);
+    }
+}
+
+function loadFromSessionStorage() {
+    try {
+        const transcriptStr = sessionStorage.getItem(STORAGE_KEY_TRANSCRIPT);
+        const engagementStr = sessionStorage.getItem(STORAGE_KEY_ENGAGEMENT);
+        const coachingStr = sessionStorage.getItem(STORAGE_KEY_COACHING);
+        
+        return {
+            transcript: transcriptStr ? JSON.parse(transcriptStr) : [],
+            engagementData: engagementStr ? JSON.parse(engagementStr) : [],
+            coaching: coachingStr ? JSON.parse(coachingStr) : null,
+        };
+    } catch (error) {
+        console.error('从 sessionStorage 加载失败:', error);
+        return {
+            transcript: [],
+            engagementData: [],
+            coaching: null,
+        };
+    }
+}
+
+function clearSessionStorage(): void {
+    try {
+        sessionStorage.removeItem(STORAGE_KEY_TRANSCRIPT);
+        sessionStorage.removeItem(STORAGE_KEY_ENGAGEMENT);
+        sessionStorage.removeItem(STORAGE_KEY_COACHING);
+    } catch (error) {
+        console.error('清除 sessionStorage 失败:', error);
+    }
+}
+
 //四大记忆区
 export default function useInterviewAnalysis(option?: UseInterviewAnalysisOptions){
-    //默认没在分析
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    //默认空白的记录数组
-    const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
-    //默认空白的数据数组
-    const [engagementData, setEngagementData] = useState<any[]>([]);
-    //默认是null的建议卡
-    const [coaching, setCoaching] = useState<CoachingData | null>(null);
+    
+    const stored = loadFromSessionStorage();
+    
+    const [transcript, setTranscript] = useState<TranscriptItem[]>(stored.transcript);
+    const [engagementData, setEngagementData] = useState<any[]>(stored.engagementData);
+    const [coaching, setCoaching] = useState<CoachingData | null>(stored.coaching);
+
+    useEffect(() => {
+        saveToSessionStorage(transcript, engagementData, coaching);
+    }, [transcript, engagementData, coaching]);
+
+    const loadFromHistory = (detail: {
+        transcript: TranscriptItem[];
+        engagementData: any[];
+        coaching: CoachingData | null;
+    }) => {
+        setTranscript(detail.transcript);
+        setEngagementData(detail.engagementData);
+        setCoaching(detail.coaching);
+    };
 
     // 传进录音文件触发该动作
     const handleAudioUpload = async(e:React.ChangeEvent<HTMLInputElement>) => {
-        //没有文件就直接return
         const file = e.target.files?.[0];
         if(!file) return;
 
-        //限制最大上传文件大小
         const MAX_FILE_SIZE = 10 * 1024 * 1024;
         if(file.size > MAX_FILE_SIZE){
             alert('文件过大！为了保证 AI 分析速度，请上传 10MB 以内的音频文件。\n建议使用 MP3 或 M4A 格式替代 WAV 格式。');
@@ -68,8 +182,11 @@ export default function useInterviewAnalysis(option?: UseInterviewAnalysisOption
             return;
         }
 
+        clearSessionStorage();
         setIsAnalyzing(true);
         setCoaching(null);
+        setEngagementData([]);
+        setTranscript([]);
         try{
             const base64 = await readFileAsBase64(file);
             option?.onToast?.('上传成功，开始分析','info');
@@ -106,6 +223,13 @@ export default function useInterviewAnalysis(option?: UseInterviewAnalysisOption
                 } else {
                     option?.onToast?.('辅导卡数据格式异常，已展示转录与参与度', 'info');
                 }
+                
+                await saveAnalysisToHistory(
+                    transcriptList,
+                    engagementData,
+                    coachingNorm,
+                    file.name
+                );
             } catch (coachingErr: unknown) {
                 console.error(coachingErr);
                 const msg =
@@ -122,6 +246,7 @@ export default function useInterviewAnalysis(option?: UseInterviewAnalysisOption
                     ? String((error as { message?: string }).message)
                     : "";
             option?.onToast?.(msg ? `分析失败：${msg}` : '分析失败，请检查控制台网络请求','error');
+            clearSessionStorage();
             setTranscript([]);
             setEngagementData([]);
             setCoaching(null);
@@ -131,12 +256,13 @@ export default function useInterviewAnalysis(option?: UseInterviewAnalysisOption
         }
     };
 
-    //打包发货给前端
     return{
         isAnalyzing,
         transcript,
         engagementData,
         coaching,
         handleAudioUpload,
+        exportTranscript,
+        loadFromHistory,
     };
 }

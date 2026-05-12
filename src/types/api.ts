@@ -63,6 +63,7 @@ export interface HistoryRecord{
     type: string;
     fileName: string;
     score: number;
+    analysisId?: string;
 }
 
 export interface UserAdvantages{
@@ -110,4 +111,78 @@ export interface CoachingCardResponse {
 export interface ResumeAnalysisSSEChunk {
     content?: string;
     error?: string;
+}
+
+// 保存面试分析请求
+export interface SaveInterviewAnalysisRequest {
+    fileName: string;
+    audioDuration?: string;
+    transcript: string;
+    engagementData: string;
+    strengths: string;
+    opportunities: string;
+    score?: number;
+}
+
+// 保存简历分析请求
+export interface SaveResumeAnalysisRequest {
+    fileName: string;
+    content?: string;
+    analysisResult: string;
+    score?: number;
+}
+
+// 面试分析记录详情
+export interface InterviewAnalysisRecord {
+    id: number;
+    userId: string;
+    fileName: string;
+    audioDuration?: string;
+    transcript: string;
+    engagementData: string;
+    strengths: string;
+    opportunities: string;
+    score: number;
+    createdAt: string;
+}
+
+// 简历分析记录详情
+export interface ResumeAnalysisRecord {
+    id: number;
+    userId: string;
+    fileName: string;
+    content?: string;
+    analysisResult: string;
+    score: number;
+    createdAt: string;
+}
+
+// 历史列表项（用于历史记录列表展示）
+export interface HistoryListItem {
+    id: number;
+    fileName: string;
+    score: number;
+    createdAt: string;
+}
+
+// 面试分析详情（用于查看完整数据）
+export interface InterviewAnalysisDetail {
+    id: number;
+    fileName: string;
+    transcript: string;
+    engagementData: string;
+    strengths: string;
+    opportunities: string;
+    score: number;
+    createdAt: string;
+}
+
+// 简历分析详情（用于查看完整数据）
+export interface ResumeAnalysisDetail {
+    id: number;
+    fileName: string;
+    content?: string;
+    analysisResult: string;
+    score: number;
+    createdAt: string;
 }
