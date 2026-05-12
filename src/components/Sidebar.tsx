@@ -3,8 +3,8 @@ import { BarChart3, Settings, Mic, FileText, LogOut, User } from "lucide-react";
 
 //接收App的安排
 interface SidebarProps{
-    activeTab: 'interview' | 'resume' |'history'; //现在正在的部分
-    setActiveTab: (tab: 'interview' | 'resume' | 'history') => void; //换台
+    activeTab: 'interview' | 'resume' |'history' | 'settings'; //现在正在的部分
+    setActiveTab: (tab: 'interview' | 'resume' | 'history' | 'settings') => void; //换台
     onLogout: () => void;
     user: { username: string; email: string } | null;
 }
@@ -45,7 +45,10 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, user }: Sid
                     <BarChart3 size={18} />
                     历史数据报告
                 </div>
-                <div className="nav-item opacity-50 cursor-not-allowed">
+                <div 
+                    className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('settings')}
+                >
                     <Settings size={18} />
                     系统设置
                 </div>
