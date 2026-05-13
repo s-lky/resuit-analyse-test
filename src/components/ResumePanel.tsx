@@ -1,10 +1,19 @@
 import useResumeAnalysis from '../hooks/useResumeAnalysis';
 import ResumeHistoryModal from './resume/ResumeHistoryModal';
-import { FileText, Loader2, Send, Upload, History } from 'lucide-react';
-import { useState } from 'react';
+import { useToast } from '../hooks/useToast';
+import {
+  exportResumeAnalysisToMarkdown,
+  exportResumeAnalysisToPdf,
+  exportResumeAnalysisToWord,
+} from '../utils/resumeExport';
+import { FileText, Loader2, Send, Upload, History, Download, FileType, File } from 'lucide-react';
+import { useState, useRef } from 'react';
 
 export default function ResumePanel(){
     const [showHistory, setShowHistory] = useState(false);
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const analysisRef = useRef<HTMLDivElement>(null);
+    const { success, error } = useToast();
     const{
         resumeText,
         resumeAnalysis,
@@ -13,6 +22,27 @@ export default function ResumePanel(){
         analyzeResume,
         loadFromHistory,
     } = useResumeAnalysis();
+
+    const handleExport = async (format: 'pdf' | 'word' | 'md') => {
+        if (!resumeAnalysis.trim() || isStreaming) return;
+        try {
+            if (format === 'md') {
+                exportResumeAnalysisToMarkdown(resumeAnalysis);
+            } else if (format === 'word') {
+                await exportResumeAnalysisToWord(resumeAnalysis);
+            } else {
+                if (!analysisRef.current) {
+                    throw new Error('未找到可导出的内容区域');
+                }
+                await exportResumeAnalysisToPdf(analysisRef.current);
+            }
+            success(`已导出为 ${format === 'word' ? 'Word' : format.toUpperCase()} 格式`);
+            setShowExportMenu(false);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : '导出失败';
+            error(message);
+        }
+    };
 
     return(
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 overflow-hidden">
@@ -27,7 +57,7 @@ export default function ResumePanel(){
                             <History size={14} />
                             历史记录
                         </button>
-                        <label className="flex items-center gap-2 text-accent cursor=pointer hover:underline" >
+                        <label className="flex items-center gap-2 text-accent cursor-pointer hover:underline" >
                             <Upload size={14} />
                             上传PDF简历 
                             <input type="file" className="hidden" accept=".pdf" onChange={handleResumeUpload} />
@@ -65,10 +95,50 @@ export default function ResumePanel(){
             <div className="card h-full">
                 <div className="card-header">
                     <span>AI优化建议</span>
+                    {resumeAnalysis.trim().length > 0 && !isStreaming && (
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => setShowExportMenu(!showExportMenu)}
+                                className="flex items-center gap-2 text-accent cursor-pointer hover:underline"
+                            >
+                                <Download size={14} />
+                                导出
+                            </button>
+                            {showExportMenu && (
+                                <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10 min-w-[150px]">
+                                    <button
+                                        type="button"
+                                        onClick={() => void handleExport('pdf')}
+                                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                                    >
+                                        <FileText size={14} />
+                                        导出为 PDF
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void handleExport('word')}
+                                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                                    >
+                                        <FileType size={14} />
+                                        导出为 Word
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void handleExport('md')}
+                                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                                    >
+                                        <File size={14} />
+                                        导出为 Markdown
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
                 <div className="flex-1 p-6 flex flex-col overflow-hidden">
                     {resumeAnalysis || isStreaming ? (
-                        <div className="streaming-output">
+                        <div ref={analysisRef} className="streaming-output">
                             {resumeAnalysis}
                             {isStreaming && <span className="animate-pulse">_</span>}
                         </div>

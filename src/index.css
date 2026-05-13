@@ -74,9 +74,9 @@
     @apply font-bold text-[10px] uppercase mb-1 block;
   }
 
-  /* 流式输出框:黑色背景 绿色文字 等宽字体（代码样式）用于 AI 流式输出、终端输出、代码展示 */
+  /* 流式输出框：浅色阅读区，与左侧简历解析区风格一致 */
   .streaming-output {
-    @apply font-mono text-sm bg-slate-900 text-success p-4 rounded-lg leading-relaxed flex-1 mt-3 overflow-auto;
+    @apply text-sm bg-slate-50 text-text-primary border border-border p-4 rounded-lg leading-relaxed flex-1 mt-3 overflow-auto whitespace-pre-wrap font-sans;
   }
 }
 
