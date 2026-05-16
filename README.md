@@ -82,6 +82,3 @@ resuit-analyse-test/
 ├── tsconfig.json         # TypeScript 配置
 └── vite.config.ts        # Vite 配置
 ```
-## 👥 贡献
-
-欢迎提交 Issue 和 Pull Request！
