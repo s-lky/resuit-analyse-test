@@ -1,5 +1,6 @@
 // 侧边栏组件-菜单按钮，切换不同业务
 import { BarChart3, Settings, Mic, FileText, LogOut, User } from "lucide-react"; //图标库
+import { useNavigate, useLocation } from "react-router-dom";
 
 //接收App的安排
 interface SidebarProps{
@@ -10,6 +11,13 @@ interface SidebarProps{
 }
 
 export default function Sidebar({ activeTab, setActiveTab, onLogout, user }: SidebarProps){
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const handleNavigation = (tab: 'interview' | 'resume' | 'history' | 'settings') =>{
+        setActiveTab(tab);
+    };
+
     return(
         // 侧边栏的外壳和logo，<aside> 规定了这个面板的宽度（w-64）
         <aside className="w-64 bg-sidebar-bg text-white flex flex-col p-6">
@@ -17,7 +25,7 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, user }: Sid
                 <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
                     <BarChart3 size={20} />
                 </div>
-                DeepRecuit
+                DeepResume0
             </div>
             {/* 导航菜单，一共有四个按钮 */}
             {/* active让按钮高亮，onClick切换频道 */}
